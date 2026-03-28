@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JARVIS AI - Pure Energy Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        :root { 
+            --cyan: #00f3ff;
+            --cyan-glow: rgba(0, 243, 255, 0.8);
+            --bg-black: #000000;
+        }
+
+        body { 
+            font-family: 'Share Tech Mono', monospace; 
+            background: radial-gradient(circle at center, #01121c 0%, var(--bg-black) 60%);
+            color: #fff; 
+            overflow: hidden; 
+            position: fixed; 
+            width: 100%; 
+            height: 100%; 
+        }
+
+        /* --- SECURITY LOGIN SCREEN --- */
+        #securityScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 1s ease; }
+        .login-box { text-align: center; }
+        .login-title { color: var(--cyan); font-size: 2rem; letter-spacing: 5px; margin-bottom: 20px; text-shadow: 0 0 15px var(--cyan-glow); }
+        #passInput { background: transparent; border: none; border-bottom: 2px solid var(--cyan); color: var(--cyan); font-family: 'Share Tech Mono', monospace; font-size: 1.5rem; padding: 10px; text-align: center; outline: none; letter-spacing: 5px; margin-bottom: 30px; width: 80%; transition: box-shadow 0.3s; }
+        #passInput:focus { box-shadow: 0 10px 20px -10px var(--cyan-glow); }
+        .login-btn { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); padding: 10px 40px; font-size: 1.2rem; cursor: pointer; letter-spacing: 3px; font-family: 'Share Tech Mono', monospace; transition: all 0.3s; text-transform: uppercase; border-radius: 3px; }
+        .login-btn:hover { background: rgba(0, 243, 255, 0.1); box-shadow: 0 0 20px var(--cyan-glow); }
+        .access-denied { color: #ff003c; margin-top: 15px; opacity: 0; transition: opacity 0.3s; text-shadow: 0 0 10px red; letter-spacing: 2px;}
+
+        /* --- MAIN CONTAINER --- */
+        .container { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+        /* Very Minimal Top Status */
+        .status-bar { position: absolute; top: 20px; width: 100%; display: flex; justify-content: center; gap: 30px; font-size: 0.8rem; color: rgba(0, 243, 255, 0.5); letter-spacing: 2px; }
+        .status-dot { width: 5px; height: 5px; border-radius: 50%; background: #333; display: inline-block; margin-right: 5px; vertical-align: middle;}
+        .status-dot.active { background: var(--cyan); box-shadow: 0 0 8px var(--cyan-glow); }
+        .status-dot.awake { background: #00ffaa; box-shadow: 0 0 10px #00ffaa; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* --- THE ENERGY HUD (Just like your photo) --- */
+        .hud-wrapper { position: relative; width: 350px; height: 350px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.2)); }
+        
+        /* Center Button (Pure text, no solid background) */
+        .core-button { width: 150px; height: 150px; border-radius: 50%; background: transparent; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; z-index: 20; transition: transform 0.3s; }
+        .core-text { color: var(--cyan); font-size: 1.5rem; font-weight: bold; letter-spacing: 5px; text-shadow: 0 0 15px var(--cyan-glow), 0 0 30px var(--cyan-glow); transition: all 0.3s; }
+        .core-button:active { transform: scale(0.9); }
+        .core-button.listening .core-text { color: #00ffaa; text-shadow: 0 0 20px #00ffaa, 0 0 40px #00ffaa; }
+
+        /* The Glowing Energy Rings (Dhire dhire ghoomne wali) */
+        .ring { position: absolute; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        
+        /* 1. Inner solid circle */
+        .ring-1 { width: 120px; height: 120px; border: 2px solid rgba(0, 243, 255, 0.7); box-shadow: inset 0 0 10px rgba(0, 243, 255, 0.5); }
+        
+        /* 2. Dotted Inner Track (Spins Reverse Slowly) */
+        .ring-2 { width: 150px; height: 150px; border: 2px dotted rgba(0, 243, 255, 0.5); animation: spinReverse 25s linear infinite; }
+        
+        /* 3. First Thick Energy Arc */
+        .ring-3 { width: 180px; height: 180px; border: 3px solid transparent; border-top: 3px solid var(--cyan); border-left: 3px solid var(--cyan); filter: drop-shadow(0 0 8px var(--cyan)); animation: spin 15s linear infinite; }
+        
+        /* 4. Second Thick Energy Arc (Spins Reverse) */
+        .ring-4 { width: 220px; height: 220px; border: 2px solid transparent; border-bottom: 4px solid var(--cyan); border-right: 4px solid var(--cyan); filter: drop-shadow(0 0 12px var(--cyan)); animation: spinReverse 20s linear infinite; }
+        
+        /* 5. Outer Fading Trail */
+        .ring-5 { width: 270px; height: 270px; border: 1px solid transparent; border-top: 4px solid rgba(0, 243, 255, 0.9); filter: drop-shadow(0 0 15px var(--cyan)); animation: spin 10s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        /* 6. Outermost Thin Dashed Line */
+        .ring-6 { width: 310px; height: 310px; border: 1px dashed rgba(0, 243, 255, 0.3); animation: spin 30s linear infinite; }
+
+        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes spinReverse { 0% { transform: translate(-50%, -50%) rotate(360deg); } 100% { transform: translate(-50%, -50%) rotate(0deg); } }
+
+        /* Clean Text Output */
+        .text-display { position: absolute; bottom: 12%; text-align: center; width: 100%; padding: 0 30px; }
+        .transcript { font-size: 0.9rem; color: rgba(0, 243, 255, 0.4); opacity: 0; transform: translateY(10px); transition: all 0.3s; margin-bottom: 10px; letter-spacing: 1px; }
+        .transcript.show { opacity: 1; transform: translateY(0); }
+        .transcript.processing { color: var(--cyan); font-size: 1.1rem; text-shadow: 0 0 5px var(--cyan-glow); }
+        
+        .response { font-size: 1.2rem; font-weight: bold; color: #fff; text-shadow: 0 0 15px var(--cyan-glow); opacity: 0; transform: translateY(10px); transition: all 0.5s cubic-bezier(0.1, 0.7, 0.1, 1); letter-spacing: 1.5px; line-height: 1.4; }
+        .response.show { opacity: 1; transform: translateY(0); }
+
+        /* Invisible Quick Commands (Hover to see) */
+        .quick-commands { position: absolute; bottom: 2%; display: flex; gap: 20px; opacity: 0.1; transition: opacity 0.5s; }
+        .quick-commands:hover { opacity: 1; }
+        .cmd-btn { background: transparent; border: none; color: var(--cyan); font-family: 'Share Tech Mono', monospace; font-size: 0.8rem; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: text-shadow 0.3s;}
+        .cmd-btn:hover { text-shadow: 0 0 10px var(--cyan-glow); }
+
+        /* Loading Spinner */
+        .loading-ring { position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 3px solid transparent; border-top-color: #00ffaa; animation: spin 1s linear infinite; opacity: 0; top: 0; left: 0; }
+        .loading-ring.show { opacity: 1; }
+
+        @media (max-width: 400px) { .hud-wrapper { transform: scale(0.8); } .text-display { bottom: 8%; } }
+    </style>
+</head>
+<body>
+
+    <!-- SECURITY LOGIN -->
+    <div id="securityScreen">
+        <div class="login-box">
+            <div class="login-title">SYSTEM SECURED</div>
+            <input type="password" id="passInput" placeholder="AWAITING INPUT">
+            <br>
+            <button class="login-btn" onclick="checkPassword()">AUTHORIZE</button>
+            <div class="access-denied" id="errorMsg">ACCESS DENIED</div>
+        </div>
+    </div>
+
+    <!-- MAIN UI -->
+    <div class="container">
+        <!-- Minimal Status Bar -->
+        <div class="status-bar">
+            <div><span class="status-dot" id="systemStatus"></span>SYS</div>
+            <div><span class="status-dot" id="voiceStatus"></span>MIC</div>
+            <div><span id="clock" style="color: var(--cyan); text-shadow: 0 0 5px var(--cyan-glow);">00:00</span></div>
+        </div>
+
+        <!-- THE ENERGY HUD -->
+        <div class="hud-wrapper">
+            <div class="ring ring-6"></div>
+            <div class="ring ring-5"></div>
+            <div class="ring ring-4"></div>
+            <div class="ring ring-3"></div>
+            <div class="ring ring-2"></div>
+            <div class="ring ring-1"></div>
+            <div class="loading-ring" id="loadingRing"></div>
+            
+            <button class="core-button" id="coreBtn" onclick="toggleListening()">
+                <div class="core-text" id="coreText">J.A.R.V.I.S</div>
+            </button>
+        </div>
+
+        <!-- Clean Text Display -->
+        <div class="text-display">
+            <div class="transcript" id="transcript">Awaiting authorization...</div>
+            <div class="response" id="response"></div>
+        </div>
+
+        <!-- Hidden Hover Commands -->
+        <div class="quick-commands">
+            <button class="cmd-btn" onclick="simulateCommand('open youtube')">[ YT ]</button>
+            <button class="cmd-btn" onclick="simulateCommand('tum kaun ho')">[ WHO ]</button>
+            <button class="cmd-btn" onclick="simulateCommand('meri list mein kya kaam hai')">[ TODO ]</button>
+        </div>
+    </div>
+
+    <script>
+        const SECRET_PASSWORD = "krish8140"; 
+        let synthesis = window.speechSynthesis; 
+        let systemUnlocked = false;
+        let chatMemory = []; 
+        let todoList = [];
+
+        function checkPassword() {
+            if(document.getElementById('passInput').value === SECRET_PASSWORD) {
+                document.getElementById('securityScreen').style.opacity = "0";
+                setTimeout(() => {
+                    document.getElementById('securityScreen').style.display = "none";
+                    systemUnlocked = true;
+                    document.getElementById('systemStatus').classList.add('active');
+                    
+                    const welcomeMsg = "पासवर्ड स्वीकार किया गया। सिस्टम ऑनलाइन है सर।";
+                    showTranscript("System Online. Say 'JARVIS' to wake me up."); 
+                    showResponse(welcomeMsg); 
+                    speak(welcomeMsg);
+                    setTimeout(() => { initSpeechRecognition(); }, 5000); 
+                }, 1000);
+            } else {
+                document.getElementById('errorMsg').style.opacity = "1"; document.getElementById('passInput').value = ""; 
+                speak("Access denied."); setTimeout(() => { document.getElementById('errorMsg').style.opacity = "0"; }, 2000);
+            }
+        }
+        document.getElementById("passInput").addEventListener("keypress", (e) => { if (e.key === "Enter") checkPassword(); });
+
+        setInterval(() => { const now = new Date(); document.getElementById('clock').textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`; }, 1000);
+
+        // --- FREE HINDI AI BRAIN ---
+        async function fetchAIResponse(userMessage) {
+            if(chatMemory.length > 4) chatMemory.shift();
+            let context = chatMemory.join(" | ");
+            const prompt = `System Rule: You are JARVIS, Tony Stark's AI. YOU MUST ALWAYS REPLY IN PURE HINDI LANGUAGE. Keep answers very short (1-2 sentences). Context: ${context}. User asks: ${userMessage}`;
+            
+            try { 
+                const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`); 
+                let answer = await res.text(); 
+                chatMemory.push(`User: ${userMessage}`); chatMemory.push(`JARVIS: ${answer}`);
+                return answer;
+            } catch (e) { return "तकनीकी खराबी।"; }
+        }
+
+        // --- SPEECH RECOGNITION ---
+        let recognition = null; let isListening = false; let isSpeaking = false; let isAwake = false; let userManualStop = false;
+
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) return false;
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = true; recognition.interimResults = false; 
+            recognition.lang = 'en-IN'; 
+
+            recognition.onstart = () => { isListening = true; document.getElementById('voiceStatus').classList.add('active'); };
+            recognition.onend = () => { isListening = false; document.getElementById('voiceStatus').classList.remove('active'); if (systemUnlocked && !isSpeaking && !userManualStop) { setTimeout(() => { try { recognition.start(); } catch(e){} }, 500); } };
+
+            recognition.onresult = (event) => {
+                if(isSpeaking) return;
+                let transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+                showTranscript(`[Audio Scanned]: ${transcript}`, false); 
+                
+                if (transcript.includes('jarvis')) {
+                    let command = transcript.split('jarvis')[1].trim();
+                    if (command.length > 2) { wakeUpAndProcess(command); } 
+                    else { 
+                        isAwake = true; 
+                        document.getElementById('coreText').innerText = "LISTENING"; 
+                        document.getElementById('coreText').style.color = "#00ffaa";
+                        document.getElementById('voiceStatus').classList.add('awake'); 
+                        speak("हाँ सर?"); 
+                        showTranscript("Awaiting command...", true); 
+                    }
+                } else if (isAwake) { wakeUpAndProcess(transcript); }
+            };
+            userManualStop = false; try { recognition.start(); } catch(e){} return true;
+        }
+
+        function wakeUpAndProcess(command) {
+            isAwake = false; 
+            document.getElementById('coreText').innerText = "THINKING"; 
+            document.getElementById('coreText').style.color = "var(--cyan)";
+            document.getElementById('voiceStatus').classList.remove('awake');
+            showTranscript(`Processing: "${command}"`, true); processCommand(command);
+        }
+
+        function toggleListening() {
+            if (!recognition) return;
+            if (isListening) { userManualStop = true; recognition.stop(); showTranscript("Mic Paused."); document.getElementById('coreText').innerText = "PAUSED"; document.getElementById('coreText').style.color = "gray"; } 
+            else { userManualStop = false; recognition.start(); showTranscript("Mic Active."); document.getElementById('coreText').innerText = "J.A.R.V.I.S"; document.getElementById('coreText').style.color = "var(--cyan)"; }
+        }
+
+        // --- COMMAND PROCESSING ---
+        async function processCommand(command) {
+            document.getElementById('loadingRing').classList.add('show');
+            const lowerCmd = command.toLowerCase(); let response = '';
+
+            if (lowerCmd.includes('play') || lowerCmd.includes('bajao')) {
+                let song = lowerCmd.replace('jarvis', '').replace('play', '').replace('song', '').replace('gaana', '').replace('bajao', '').trim();
+                response = `${song} चला रहा हूँ।`; setTimeout(() => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(song)}`, "_blank"), 1500);
+            }
+            else if (lowerCmd.includes('yaad dilao') || lowerCmd.includes('list mein')) { todoList.push(command); response = "सेव कर लिया गया है।"; }
+            else if (lowerCmd.includes('kya kaam hai') || lowerCmd.includes('meri list')) {
+                if(todoList.length === 0) response = "लिस्ट खाली है सर।"; else response = `सर, आपको ये काम करने हैं: ${todoList.join(", ")}`;
+            }
+            else if (lowerCmd.includes('open youtube')) { response = "यूट्यूब खोल रहा हूँ।"; setTimeout(() => window.open("https://www.youtube.com", "_blank"), 1500); }
+            else if (lowerCmd.includes('open instagram')) { response = "इंस्टाग्राम खोल रहा हूँ।"; setTimeout(() => window.open("https://www.instagram.com", "_blank"), 1500); }
+            else if (lowerCmd.includes('time') || lowerCmd.includes('samay')) { response = `अभी ${new Date().toLocaleTimeString()} बज रहे हैं।`; } 
+            else { response = await fetchAIResponse(command); }
+
+            document.getElementById('loadingRing').classList.remove('show');
+            document.getElementById('coreText').innerText = "J.A.R.V.I.S";
+            showTranscript(`> ${command}`, false); showResponse(response); speak(response);
+        }
+
+        // --- TEXT TO SPEECH ---
+        function speak(text) {
+            if (!synthesis) return; synthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1; utterance.pitch = 0.9; utterance.volume = 1;
+            
+            const voices = synthesis.getVoices();
+            let hindiVoice = voices.find(v => v.lang === 'hi-IN' || v.name.includes('Hindi') || v.name.includes('India'));
+            if (hindiVoice) utterance.voice = hindiVoice;
+
+            utterance.onstart = () => { 
+                isSpeaking = true; 
+                document.getElementById('coreText').innerText = "SPEAKING"; 
+                document.querySelector('.hud-wrapper').style.transform = "scale(1.05)"; 
+                if(isListening) { recognition.stop(); } 
+            }
+            utterance.onend = () => { 
+                isSpeaking = false; 
+                document.getElementById('coreText').innerText = "J.A.R.V.I.S"; 
+                document.querySelector('.hud-wrapper').style.transform = "scale(1)"; 
+                if(systemUnlocked && !userManualStop) { setTimeout(() => { try { recognition.start(); } catch(e){} }, 500); } 
+            }
+            synthesis.speak(utterance);
+        }
+
+        function showTranscript(text, processing = false) { const el = document.getElementById('transcript'); el.textContent = text; el.classList.add('show'); if (processing) el.classList.add('processing'); else el.classList.remove('processing'); }
+        function showResponse(text) { const el = document.getElementById('response'); el.textContent = text; el.classList.add('show'); }
+        function simulateCommand(text) { wakeUpAndProcess(text); }
+        if (synthesis && speechSynthesis.onvoiceschanged !== undefined) { speechSynthesis.onvoiceschanged = () => synthesis.getVoices(); }
+    </script>
+</body>
+</html>isListening = false;
+                document.getElementById('coreBtn').classList.remove('listening');
+                document.getElementById('voiceStatus').classList.remove('active');
+                animateVoiceBars(false);
+            };
+
+            recognition.onresult = (event) => {
+                let finalTranscript = ''; let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
+                    else interimTranscript += event.results[i][0].transcript;
+                }
+                if (interimTranscript) showTranscript(interimTranscript, true);
+                if (finalTranscript) {
+                    showTranscript(finalTranscript);
+                    processCommand(finalTranscript);
+                }
+            };
+            return true;
+        }
+
+        function toggleListening() {
+            if (!recognition) return;
+            if (isListening) recognition.stop();
+            else recognition.start();
+        }
+
+        // === 5. COMMAND PROCESSING ===
+        async function processCommand(command) {
+            document.getElementById('loadingRing').classList.add('show');
+            const lowerCmd = command.toLowerCase();
+            let response = '';
+
+            // Fast Local Commands
+            if (lowerCmd.includes('time')) {
+                response = `The current time is ${new Date().toLocaleTimeString()}`;
+            } 
+            else if (lowerCmd.includes('date')) {
+                response = `Today is ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`;
+            }
+            // Send to Free Global AI
+            else {
+                showTranscript("Thinking...", true);
+                response = await fetchAIResponse(command);
+            }
+
+            document.getElementById('loadingRing').classList.remove('show');
+            showTranscript(command, false); 
+            showResponse(response);
+            speak(response);
+        }
+
+        // === 6. TEXT TO SPEECH (TTS) ===
+        function speak(text) {
+            if (!synthesis) return;
+            synthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1;
+            utterance.pitch = 0.8; 
+            utterance.volume = 1;
+
+            const voices = synthesis.getVoices();
+            const preferredVoice = voices.find(v => 
+                v.name.includes('UK English Male') || 
+                v.name.includes('Google UK English Male') || 
+                v.name.includes('Daniel')
+            ) || voices.find(v => v.name.includes('English'));
+
+            if (preferredVoice) utterance.voice = preferredVoice;
+
+            utterance.onstart = () => { document.querySelector('.core-ring').style.transform = "scale(1.05)"; }
+            utterance.onend = () => { document.querySelector('.core-ring').style.transform = "scale(1)"; }
+
+            synthesis.speak(utterance);
+        }
+
+        function showTranscript(text, processing = false) {
+            const el = document.getElementById('transcript');
+            el.textContent = text;
+            el.classList.add('show');
+            if (processing) el.classList.add('processing');
+            else el.classList.remove('processing');
+        }
+
+        function showResponse(text) {
+            const el = document.getElementById('response');
+            el.textContent = text;
+            el.classList.add('show');
+        }
+
+        function simulateCommand(text) {
+            showTranscript(text);
+            processCommand(text);
+        }
+
+        if (synthesis && speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => synthesis.getVoices();
+        }
+
+    </script>
+</body>
+</html>ssage.includes("Incorrect API key")) {
+                    return "Sir, the OpenAI API key provided is invalid. Please update it in the settings.";
+                }
+                return "I apologize sir, but I am unable to reach the main servers at this moment. Please check the network or the API key.";
+            }
+        }
+
+        // === 4. SPEECH RECOGNITION (STT) ===
+        let recognition = null;
+        let isListening = false;
+
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) { showResponse("Browser not supported. Use Chrome."); return false; }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                isListening = true;
+                document.getElementById('coreBtn').classList.add('listening');
+                document.getElementById('voiceStatus').classList.add('active');
+                animateVoiceBars(true);
+                showTranscript("Listening...", true);
+                synthesis.cancel(); 
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                document.getElementById('coreBtn').classList.remove('listening');
+                document.getElementById('voiceStatus').classList.remove('active');
+                animateVoiceBars(false);
+            };
+
+            recognition.onresult = (event) => {
+                let finalTranscript = ''; let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
+                    else interimTranscript += event.results[i][0].transcript;
+                }
+                if (interimTranscript) showTranscript(interimTranscript, true);
+                if (finalTranscript) {
+                    showTranscript(finalTranscript);
+                    processCommand(finalTranscript);
+                }
+            };
+            return true;
+        }
+
+        function toggleListening() {
+            if (!recognition) return;
+            if (isListening) recognition.stop();
+            else recognition.start();
+        }
+
+        // === 5. COMMAND PROCESSING ===
+        async function processCommand(command) {
+            document.getElementById('loadingRing').classList.add('show');
+            const lowerCmd = command.toLowerCase();
+            let response = '';
+
+            // Fast Local Commands
+            if (lowerCmd.includes('time')) {
+                response = `The current time is ${new Date().toLocaleTimeString()}`;
+            } 
+            else if (lowerCmd.includes('date')) {
+                response = `Today is ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`;
+            }
+            // Send to Real AI (ChatGPT)
+            else {
+                showTranscript("Thinking...", true);
+                response = await fetchAIResponse(command);
+            }
+
+            document.getElementById('loadingRing').classList.remove('show');
+            showTranscript(command, false); 
+            showResponse(response);
+            speak(response);
+        }
+
+        // === 6. TEXT TO SPEECH (TTS) ===
+        function speak(text) {
+            if (!synthesis) return;
+            synthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1;
+            utterance.pitch = 0.8; 
+            utterance.volume = 1;
+
+            const voices = synthesis.getVoices();
+            const preferredVoice = voices.find(v => 
+                v.name.includes('UK English Male') || 
+                v.name.includes('Google UK English Male') || 
+                v.name.includes('Daniel')
+            ) || voices.find(v => v.name.includes('English'));
+
+            if (preferredVoice) utterance.voice = preferredVoice;
+
+            utterance.onstart = () => { document.querySelector('.core-ring').style.transform = "scale(1.05)"; }
+            utterance.onend = () => { document.querySelector('.core-ring').style.transform = "scale(1)"; }
+
+            synthesis.speak(utterance);
+        }
+
+        function showTranscript(text, processing = false) {
+            const el = document.getElementById('transcript');
+            el.textContent = text;
+            el.classList.add('show');
+            if (processing) el.classList.add('processing');
+            else el.classList.remove('processing');
+        }
+
+        function showResponse(text) {
+            const el = document.getElementById('response');
+            el.textContent = text;
+            el.classList.add('show');
+        }
+
+        function simulateCommand(text) {
+            showTranscript(text);
+            processCommand(text);
+        }
+
+        if (synthesis && speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => synthesis.getVoices();
+        }
+
+    </script>
+</body>
+</html>
